@@ -22,6 +22,7 @@ import { useAutoResume } from '@/hooks/use-auto-resume';
 import { ChatSDKError } from '@/lib/errors';
 import type { Attachment, ChatMessage } from '@/lib/types';
 import { useDataStream } from './data-stream-provider';
+import { AgentChatWrapper } from './agent-chat-wrapper';
 
 export function Chat({
   id,
@@ -136,7 +137,8 @@ export function Chat({
 
   return (
     <>
-      <div className="overscroll-behavior-contain flex h-dvh min-w-0 touch-pan-y flex-col bg-background">
+      <AgentChatWrapper selectedModelId={initialChatModel}>
+        <div className="overscroll-behavior-contain flex h-dvh min-w-0 touch-pan-y flex-col bg-background">
         <ChatHeader
           chatId={id}
           selectedVisibilityType={initialVisibilityType}
@@ -194,6 +196,7 @@ export function Chat({
         selectedVisibilityType={visibilityType}
         selectedModelId={initialChatModel}
       />
+      </AgentChatWrapper>
     </>
   );
 }

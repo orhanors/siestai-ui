@@ -25,6 +25,8 @@ import { createDocument } from '@/lib/ai/tools/create-document';
 import { updateDocument } from '@/lib/ai/tools/update-document';
 import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
 import { getWeather } from '@/lib/ai/tools/get-weather';
+import { webSearchTool, getWebpageContentTool } from '@/lib/ai/tools/web-search';
+import { executeCodeTool, analyzeCodeTool, createFileTool } from '@/lib/ai/tools/coding-tools';
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
@@ -39,6 +41,8 @@ import { ChatSDKError } from '@/lib/errors';
 import type { ChatMessage } from '@/lib/types';
 import type { ChatModel } from '@/lib/ai/models';
 import type { VisibilityType } from '@/components/visibility-selector';
+import { getAgentConfig, agentConfigs } from '@/lib/ai/agents';
+import { chatModels } from '@/lib/ai/models';
 
 export const maxDuration = 60;
 
@@ -135,6 +139,29 @@ export async function POST(request: Request) {
       country,
     };
 
+    // Get agent configuration
+    const selectedModel = chatModels.find(model => model.id === selectedChatModel);
+    const agentConfig = selectedModel?.agentId ? getAgentConfig(selectedModel.agentId) : null;
+
+    const getSystemPrompt = () => {
+      if (agentConfig) {
+        return agentConfig.systemPrompt;
+      }
+      return systemPrompt({ selectedChatModel, requestHints });
+    };
+
+    const getActiveTools = () => {
+      if (selectedChatModel === 'chat-model-reasoning') {
+        return [];
+      }
+      
+      if (agentConfig) {
+        return agentConfig.tools;
+      }
+      
+      return ['getWeather', 'createDocument', 'updateDocument', 'requestSuggestions'];
+    };
+
     await saveMessages({
       messages: [
         {
@@ -155,30 +182,50 @@ export async function POST(request: Request) {
 
     const stream = createUIMessageStream({
       execute: ({ writer: dataStream }) => {
-        const result = streamText({
-          model: myProvider.languageModel(selectedChatModel),
-          system: systemPrompt({ selectedChatModel, requestHints }),
-          messages: convertToModelMessages(uiMessages),
-          stopWhen: stepCountIs(5),
-          experimental_activeTools:
-            selectedChatModel === 'chat-model-reasoning'
-              ? []
-              : [
-                  'getWeather',
-                  'createDocument',
-                  'updateDocument',
-                  'requestSuggestions',
-                ],
-          experimental_transform: smoothStream({ chunking: 'word' }),
-          tools: {
+        // Define all available tools with dataStream
+        const getAllTools = () => ({
+          getWeather,
+          createDocument: createDocument({ session, dataStream }),
+          updateDocument: updateDocument({ session, dataStream }),
+          requestSuggestions: requestSuggestions({ session, dataStream }),
+          webSearch: webSearchTool,
+          getWebpageContent: getWebpageContentTool,
+          executeCode: executeCodeTool,
+          analyzeCode: analyzeCodeTool,
+          createFile: createFileTool,
+        });
+
+        // Get tools based on agent
+        const getAgentTools = () => {
+          const allTools = getAllTools();
+          
+          if (agentConfig) {
+            const agentTools: any = {};
+            agentConfig.tools.forEach(toolName => {
+              if (allTools[toolName as keyof typeof allTools]) {
+                agentTools[toolName] = allTools[toolName as keyof typeof allTools];
+              }
+            });
+            return agentTools;
+          }
+          
+          // Default tools for non-agent models
+          return {
             getWeather,
             createDocument: createDocument({ session, dataStream }),
             updateDocument: updateDocument({ session, dataStream }),
-            requestSuggestions: requestSuggestions({
-              session,
-              dataStream,
-            }),
-          },
+            requestSuggestions: requestSuggestions({ session, dataStream }),
+          };
+        };
+
+        const result = streamText({
+          model: myProvider.languageModel(selectedChatModel),
+          system: getSystemPrompt(),
+          messages: convertToModelMessages(uiMessages),
+          stopWhen: stepCountIs(5),
+          experimental_activeTools: getActiveTools(),
+          experimental_transform: smoothStream({ chunking: 'word' }),
+          tools: getAgentTools(),
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,
             functionId: 'stream-text',

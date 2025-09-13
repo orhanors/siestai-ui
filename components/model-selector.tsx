@@ -58,7 +58,10 @@ export function ModelSelector({
           variant="outline"
           className="md:h-[34px] md:px-2"
         >
-          {selectedChatModel?.name}
+          <div className="flex items-center gap-2">
+            {selectedChatModel?.icon && <span className="text-sm">{selectedChatModel.icon}</span>}
+            {selectedChatModel?.name}
+          </div>
           <ChevronDownIcon />
         </Button>
       </DropdownMenuTrigger>
@@ -89,7 +92,10 @@ export function ModelSelector({
                 className="group/item flex w-full flex-row items-center justify-between gap-2 sm:gap-4"
               >
                 <div className="flex flex-col items-start gap-1">
-                  <div className="text-sm sm:text-base">{chatModel.name}</div>
+                  <div className="flex items-center gap-2 text-sm sm:text-base">
+                    {chatModel.icon && <span className="text-lg">{chatModel.icon}</span>}
+                    {chatModel.name}
+                  </div>
                   <div className="line-clamp-2 text-muted-foreground text-xs">
                     {chatModel.description}
                   </div>

@@ -3,6 +3,8 @@ import type { getWeather } from './ai/tools/get-weather';
 import type { createDocument } from './ai/tools/create-document';
 import type { updateDocument } from './ai/tools/update-document';
 import type { requestSuggestions } from './ai/tools/request-suggestions';
+import type { webSearchTool, getWebpageContentTool } from './ai/tools/web-search';
+import type { executeCodeTool, analyzeCodeTool, createFileTool } from './ai/tools/coding-tools';
 import type { InferUITool, LanguageModelUsage, UIMessage } from 'ai';
 
 import type { ArtifactKind } from '@/components/artifact';
@@ -22,12 +24,22 @@ type updateDocumentTool = InferUITool<ReturnType<typeof updateDocument>>;
 type requestSuggestionsTool = InferUITool<
   ReturnType<typeof requestSuggestions>
 >;
+type webSearchToolType = InferUITool<typeof webSearchTool>;
+type getWebpageContentToolType = InferUITool<typeof getWebpageContentTool>;
+type executeCodeToolType = InferUITool<typeof executeCodeTool>;
+type analyzeCodeToolType = InferUITool<typeof analyzeCodeTool>;
+type createFileToolType = InferUITool<typeof createFileTool>;
 
 export type ChatTools = {
   getWeather: weatherTool;
   createDocument: createDocumentTool;
   updateDocument: updateDocumentTool;
   requestSuggestions: requestSuggestionsTool;
+  webSearch: webSearchToolType;
+  getWebpageContent: getWebpageContentToolType;
+  executeCode: executeCodeToolType;
+  analyzeCode: analyzeCodeToolType;
+  createFile: createFileToolType;
 };
 
 export type CustomUIDataTypes = {

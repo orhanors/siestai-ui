@@ -24,6 +24,9 @@ import { MessageReasoning } from './message-reasoning';
 import type { UseChatHelpers } from '@ai-sdk/react';
 import type { ChatMessage } from '@/lib/types';
 import { useDataStream } from './data-stream-provider';
+import { WebSearchResult } from './agents/web-search-result';
+import { CodeExecutionResult } from './agents/code-execution-result';
+import { CodeAnalysisResult } from './agents/code-analysis-result';
 
 const PurePreviewMessage = ({
   chatId,
@@ -261,6 +264,70 @@ const PurePreviewMessage = ({
                             />
                           )
                         }
+                        errorText={undefined}
+                      />
+                    )}
+                  </ToolContent>
+                </Tool>
+              );
+            }
+
+            // Agent-specific tool handling
+            if (type === 'tool-webSearch') {
+              const { toolCallId, state } = part;
+
+              return (
+                <Tool key={toolCallId} defaultOpen={true}>
+                  <ToolHeader type="tool-webSearch" state={state} />
+                  <ToolContent>
+                    {state === 'input-available' && (
+                      <ToolInput input={part.input} />
+                    )}
+                    {state === 'output-available' && (part.output as any) && (
+                      <ToolOutput
+                        output={<WebSearchResult {...(part.output as any)} />}
+                        errorText={undefined}
+                      />
+                    )}
+                  </ToolContent>
+                </Tool>
+              );
+            }
+
+            if (type === 'tool-executeCode') {
+              const { toolCallId, state } = part;
+
+              return (
+                <Tool key={toolCallId} defaultOpen={true}>
+                  <ToolHeader type="tool-executeCode" state={state} />
+                  <ToolContent>
+                    {state === 'input-available' && (
+                      <ToolInput input={part.input} />
+                    )}
+                    {state === 'output-available' && (part.output as any) && (
+                      <ToolOutput
+                        output={<CodeExecutionResult {...(part.output as any)} />}
+                        errorText={undefined}
+                      />
+                    )}
+                  </ToolContent>
+                </Tool>
+              );
+            }
+
+            if (type === 'tool-analyzeCode') {
+              const { toolCallId, state } = part;
+
+              return (
+                <Tool key={toolCallId} defaultOpen={true}>
+                  <ToolHeader type="tool-analyzeCode" state={state} />
+                  <ToolContent>
+                    {state === 'input-available' && (
+                      <ToolInput input={part.input} />
+                    )}
+                    {state === 'output-available' && (part.output as any) && (
+                      <ToolOutput
+                        output={<CodeAnalysisResult {...(part.output as any)} />}
                         errorText={undefined}
                       />
                     )}
